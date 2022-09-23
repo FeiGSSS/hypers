@@ -47,7 +47,8 @@ def train(args, data, device):
     model = SHGNN(num_layers=args.num_layers,
                   dim=args.dim,
                   num_class=data.num_class,
-                  dp=args.dp)
+                  dp=args.dp,
+                  convs=args.convs)
     model = model.to(device)
     
     # optimizer
@@ -98,6 +99,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_layers", type=int, default=2)
     parser.add_argument("--dim", type=int, default=128)
     parser.add_argument("--dp", type=float, default=0.4, help="dropout")
+    parser.add_argument("--convs", action="store_true", help="whether use GNN")
     
     
     parser.add_argument("--device", type=int, default=0)
@@ -117,7 +119,7 @@ if __name__ == "__main__":
 
     
     all_test_score = []
-    runs = 20
+    runs = 10
     for run in range(runs):
         best_test = train(args, dataset, device)
         all_test_score.append(best_test)

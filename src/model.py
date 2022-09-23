@@ -8,11 +8,12 @@ from torch_geometric.utils import add_self_loops
 
 
 class SHGNN(nn.Module):
-    def __init__(self, num_layers, dim, num_class, dp):
+    def __init__(self, num_layers, dim, num_class, dp, convs:bool=False):
         super().__init__()
         self.num_layers = num_layers
         self.dp = dp
         self.self_loop = True
+        self.convs = convs
         
         self.N2E_covs = nn.ModuleList()
         self.E2N_covs = nn.ModuleList()
@@ -21,10 +22,10 @@ class SHGNN(nn.Module):
             # self.E2N_covs.append(SAGEConv(-1, dim))
             # self.N2E_covs.append(GATConv(-1, dim))
             # self.E2N_covs.append(GATConv(-1, dim))
-            # self.N2E_covs.append(GIN(-1, 2*dim, 1, dim, dropout=dp))
-            # self.E2N_covs.append(GIN(-1, 2*dim, 1, dim, dropout=dp))
-            self.N2E_covs.append(GAT(-1, dim, 1, dim, dropout=dp))
-            self.E2N_covs.append(GAT(-1, dim, 1, dim, dropout=dp))
+            self.N2E_covs.append(GIN(-1, 2*dim, 1, dim, dropout=dp))
+            self.E2N_covs.append(GIN(-1, 2*dim, 1, dim, dropout=dp))
+            # self.N2E_covs.append(GAT(-1, dim, 1, dim, dropout=dp))
+            # self.E2N_covs.append(GAT(-1, dim, 1, dim, dropout=dp))
         
         self.out = nn.Sequential(Linear(-1, dim),
                                  nn.ReLU(),
@@ -43,12 +44,14 @@ class SHGNN(nn.Module):
         for i in range(self.num_layers):
             xs = node_x
             copyed_node_x = node_x[edge_sub_batch.nodes_map]
-            copyed_node_x = self.N2E_covs[i](copyed_node_x, edge_1)
+            if self.convs:
+                copyed_node_x = self.N2E_covs[i](copyed_node_x, edge_1)
             edge_x = global_mean_pool(copyed_node_x, edge_sub_batch.batch)
             edge_x = F.dropout(F.relu(edge_x), p=self.dp, training=self.training) 
             
             copyed_edge_x = edge_x[node_sub_batch.edges_map]
-            copyed_edge_x = self.E2N_covs[i](copyed_edge_x, edge_2)
+            if self.convs:
+                copyed_edge_x = self.E2N_covs[i](copyed_edge_x, edge_2)
             node_x = global_mean_pool(copyed_edge_x, node_sub_batch.batch)
             node_x = F.dropout(F.relu(node_x), p=self.dp, training=self.training) 
             

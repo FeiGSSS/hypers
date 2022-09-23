@@ -22,8 +22,8 @@ class SHGNN(nn.Module):
             # self.E2N_covs.append(SAGEConv(-1, dim))
             # self.N2E_covs.append(GATConv(-1, dim))
             # self.E2N_covs.append(GATConv(-1, dim))
-            self.N2E_covs.append(GIN(-1, 2*dim, 1, dim, dropout=dp))
-            self.E2N_covs.append(GIN(-1, 2*dim, 1, dim, dropout=dp))
+            self.N2E_covs.append(GIN(-1, dim, 1, dim, dropout=dp))
+            self.E2N_covs.append(GIN(-1, dim, 1, dim, dropout=dp))
             # self.N2E_covs.append(GAT(-1, dim, 1, dim, dropout=dp))
             # self.E2N_covs.append(GAT(-1, dim, 1, dim, dropout=dp))
         

@@ -1,13 +1,16 @@
-import argparse
+from copy import deepcopy
+import os
 import random
+import argparse
 from tqdm import trange
 import numpy as np
 
-from src.load_data import MyDataset
+from src.dataset import MyDataset
 from src.model import SHGNN
 
 import torch
 from torch.optim import Adam
+from torch_geometric.utils import add_self_loops
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 torch.manual_seed(2022)
@@ -17,9 +20,16 @@ np.random.seed(2022)
 @torch.no_grad()
 def evaluate(model, data):
     model.eval()
-    out = model(data.edge_sub_batch,
-                data.node_sub_batch,
-                data.features)
+    edge_sub_batch = deepcopy(data.edge_sub_batch)
+    node_sub_batch = deepcopy(data.node_sub_batch)
+    for b in edge_sub_batch:
+        b.edge_index = add_self_loops(b.edge_index)[0]
+    for b in node_sub_batch:
+        b.edge_index = add_self_loops(b.edge_index)[0]
+    features = data.features
+    out = model(edge_sub_batch,
+                node_sub_batch,
+                features)
 
     train_acc = eval_acc(data.labels[data.split['train']],
                                  out[data.split['train']])
@@ -53,20 +63,28 @@ def train(args, data, device):
     
     # optimizer
     opt = Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
-    # scheduler = ReduceLROnPlateau(opt, 'max', factor=0.8, patience=5)
+    scheduler = ReduceLROnPlateau(opt, 'max', factor=0.9, patience=3)
     
     best_val = 0
     best_test = 0
     patience_cnt = 0
+    
+    edge_sub_batch = deepcopy(data.edge_sub_batch)
+    node_sub_batch = deepcopy(data.node_sub_batch)
+    for b in edge_sub_batch:
+        b.edge_index = add_self_loops(b.edge_index)[0]
+    for b in node_sub_batch:
+        b.edge_index = add_self_loops(b.edge_index)[0]
+    features = data.features
     
     process = trange(args.epochs)
     for epoch in process:
         process.set_description('Runs {:<1}/{} Epoch {:<2}'.format(run+1, runs, epoch))
         model.train()
         opt.zero_grad()
-        pred = pred = model(data.edge_sub_batch,
-                            data.node_sub_batch,
-                            data.features)
+        pred = pred = model(edge_sub_batch,
+                            node_sub_batch,
+                            features)
         loss = model.loss_fun(pred[data.split["train"]], data.labels[data.split["train"]])
         loss.backward()
         opt.step()
@@ -82,9 +100,9 @@ def train(args, data, device):
             if patience_cnt >= args.patience:
                 break
         
-        # scheduler.step(result[1])
+        scheduler.step(result[1])
         
-        process.set_postfix(valid_acc=result[1], test_acc=result[2], best_test_acc=best_test)
+        process.set_postfix(valid_acc=result[1]*100, test_acc=result[2]*100, best_test_acc=best_test*100)
     
     return best_test
 
@@ -96,21 +114,22 @@ if __name__ == "__main__":
     parser.add_argument("--data_name", type=str, default="cora")
     
     # model parameters
-    parser.add_argument("--num_layers", type=int, default=2)
+    parser.add_argument("--num_layers", type=int, default=3)
     parser.add_argument("--dim", type=int, default=128)
     parser.add_argument("--dp", type=float, default=0.4, help="dropout")
     parser.add_argument("--convs", action="store_true", help="whether use GNN")
     
     
     parser.add_argument("--device", type=int, default=0)
-    parser.add_argument("--epochs", type=int, default=200)
-    parser.add_argument("--patience", type=int, default=20)
+    parser.add_argument("--epochs", type=int, default=500)
+    parser.add_argument("--patience", type=int, default=100)
     
-    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--lr", type=float, default=1e-2)
     parser.add_argument("--wd", type=float, default=5e-4)
     args = parser.parse_args()
+    print(args)
     
-    print("Exps. for ", args.data_name)
+    print("Exps. for ", os.path.join(args.data_path, args.data_name))
     device = torch.device('cuda:{}'.format(args.device)) if args.device>=0 else torch.device('cpu')
     
     # load dataset

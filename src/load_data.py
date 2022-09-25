@@ -1,14 +1,13 @@
-from copy import copy
+
+from collections import defaultdict
 import os.path as osp
 import pickle as pkl
-from typing import List
-from unittest import result
-import numpy as np
 import networkx as nx
+import numpy as np
+import scipy.sparse as sp
 from networkx.algorithms import bipartite
 
 import torch
-from torch_scatter import scatter
 import torch_geometric as tg
 
 def build_dual_subgraph(num_nodes:int, edges_list, add_self_loop:bool=True):
@@ -70,12 +69,9 @@ def build_dual_subgraph(num_nodes:int, edges_list, add_self_loop:bool=True):
         data.node_name = int(n_name)
         node_subgraph_list.append(data)
     
-    edge_sub_batch = tg.data.Batch.from_data_list(edge_subgraph_list)
-    node_sub_batch = tg.data.Batch.from_data_list(node_subgraph_list)
+    return edge_subgraph_list, node_subgraph_list
     
-    return edge_sub_batch, node_sub_batch
-    
-
+#####################################################################
 def load_citation_dataset(path:str,
                           dataset:str='cora'):
 
@@ -89,6 +85,7 @@ def load_citation_dataset(path:str,
     with open(osp.join(path, dataset, 'labels.pickle'), 'rb') as f:
         labels = pkl.load(f)
         labels = torch.Tensor(labels).long()
+        if labels.min() == 1: labels -= 1
 
     num_nodes, feature_dim = features.shape
     assert num_nodes == len(labels)
@@ -100,78 +97,101 @@ def load_citation_dataset(path:str,
         hypergraph = pkl.load(f)
 
     hyperedges = list(hypergraph.values())
-    edge_sub_batch, node_sub_batch = build_dual_subgraph(num_nodes,
-                                                         hyperedges,
-                                                         True)
+    edge_sub_list, node_sub_list = build_dual_subgraph(num_nodes,hyperedges,True)
     
-    return edge_sub_batch, node_sub_batch, features, labels
+    return edge_sub_list, node_sub_list, features, labels
 
-class MyDataset():
-    def __init__(self, path:str, dataset:str):
-        data = load_citation_dataset(path, dataset)
-        self.edge_sub_batch = data[0]
-        self.node_sub_batch = data[1]
-        self.features = data[2]
-        self.labels = data[3]
-        
-        self.num_class = int(torch.max(self.labels) + 1)
-        self.split = self.rand_split_labels(self.labels)
+#####################################################################
+
+def load_LE_dataset(path=None, 
+                    dataset="ModelNet40"):
+    file_name = f'{dataset}.content'
+    p2idx_features_labels = osp.join(path, dataset, file_name)
+    idx_features_labels = np.genfromtxt(p2idx_features_labels,
+                                        dtype=np.dtype(str))
+
+    features = sp.csr_matrix(idx_features_labels[:, 1:-1], dtype=np.float32)#n*f
+    features = torch.FloatTensor(np.array(features.todense()))
+    labels = torch.LongTensor(idx_features_labels[:, -1].astype(float))
+
+    # build graph
+    idx = np.array(idx_features_labels[:, 0], dtype=np.int32)
+    idx_map = {j: i for i, j in enumerate(idx)}
     
-    def to(self, device):
-        self.edge_sub_batch = self.edge_sub_batch.to(device)
-        self.node_sub_batch = self.node_sub_batch.to(device)
-        self.features = self.features.to(device)
-        self.labels = self.labels.to(device)
-        return self
-        
-        
+    file_name = f'{dataset}.edges'
+    p2edges_unordered = osp.join(path, dataset, file_name)
+    edges_unordered = np.genfromtxt(p2edges_unordered,
+                                    dtype=np.int32)
     
-    def rand_split_labels(self, label, train_prop=.5, valid_prop=.25, ignore_negative=True, balance=False):
-        """ Adapted from https://github.com/CUAI/Non-Homophily-Benchmarks"""
-        """ randomly splits label into train/valid/test splits """
-        if not balance:
-            if ignore_negative:
-                labeled_nodes = torch.where(label != -1)[0]
-            else:
-                labeled_nodes = label
+    edges = np.array(list(map(idx_map.get, edges_unordered.flatten())),
+                     dtype=np.int32).reshape(edges_unordered.shape).T
+    
+    num_nodes = int(edges[0].max() + 1)
+    features = features[:num_nodes]
+    labels = labels[:num_nodes]
+    if labels.min() == 1: labels -= 1
+    
+    hyperedges = defaultdict(set)
+    for (v,e) in edges.T:
+        hyperedges[e].add(v)
+    hyperedges = list(hyperedges.values())
+    edge_sub_list, node_sub_list = build_dual_subgraph(num_nodes,hyperedges,True)
+    
+    return edge_sub_list, node_sub_list, features, labels
 
-            n = labeled_nodes.shape[0]
-            train_num = int(n * train_prop)
-            valid_num = int(n * valid_prop)
+###########################################################################
 
-            perm = torch.as_tensor(np.random.permutation(n))
 
-            train_indices = perm[:train_num]
-            val_indices = perm[train_num:train_num + valid_num]
-            test_indices = perm[train_num + valid_num:]
+def load_yelp_dataset(path,
+                      dataset = 'yelp'):
+    import pandas as pd
+    from sklearn.feature_extraction.text import CountVectorizer
 
-            if not ignore_negative:
-                return train_indices, val_indices, test_indices
+    # first load node features:
+    # load longtitude and latitude of restaurant.
+    latlong = pd.read_csv(osp.join(path, dataset, 'yelp_restaurant_latlong.csv')).values
 
-            train_idx = labeled_nodes[train_indices]
-            valid_idx = labeled_nodes[val_indices]
-            test_idx = labeled_nodes[test_indices]
+    # city - zipcode - state integer indicator dataframe.
+    loc = pd.read_csv(osp.join(path, dataset, 'yelp_restaurant_locations.csv'))
+    state_int = loc.state_int.values
+    city_int = loc.city_int.values
 
-            split_idx = {'train': train_idx,
-                        'valid': valid_idx,
-                        'test': test_idx}
-        else:
-            #         ipdb.set_trace()
-            indices = []
-            for i in range(label.max()+1):
-                index = torch.where((label == i))[0].view(-1)
-                index = index[torch.randperm(index.size(0))]
-                indices.append(index)
+    num_nodes = loc.shape[0]
+    state_1hot = np.zeros((num_nodes, state_int.max()))
+    state_1hot[np.arange(num_nodes), state_int - 1] = 1
 
-            percls_trn = int(train_prop/(label.max()+1)*len(label))
-            val_lb = int(valid_prop*len(label))
-            train_idx = torch.cat([i[:percls_trn] for i in indices], dim=0)
-            rest_index = torch.cat([i[percls_trn:] for i in indices], dim=0)
-            rest_index = rest_index[torch.randperm(rest_index.size(0))]
-            valid_idx = rest_index[:val_lb]
-            test_idx = rest_index[val_lb:]
-            split_idx = {'train': train_idx,
-                        'valid': valid_idx,
-                        'test': test_idx}
-        return split_idx
-        
+    city_1hot = np.zeros((num_nodes, city_int.max()))
+    city_1hot[np.arange(num_nodes), city_int - 1] = 1
+
+    # convert restaurant name into bag-of-words feature.
+    vectorizer = CountVectorizer(max_features = 1000, stop_words = 'english', strip_accents = 'ascii')
+    res_name = pd.read_csv(osp.join(path, dataset, 'yelp_restaurant_name.csv')).values.flatten()
+    name_bow = vectorizer.fit_transform(res_name).todense()
+
+    features = np.hstack([latlong, state_1hot, city_1hot, name_bow])
+
+    # then load node labels:
+    df_labels = pd.read_csv(osp.join(path, dataset, 'yelp_restaurant_business_stars.csv'))
+    labels = df_labels.values.flatten()
+
+    num_nodes, feature_dim = features.shape
+    assert num_nodes == len(labels)
+
+    features = torch.FloatTensor(features)
+    labels = torch.LongTensor(labels)
+    if labels.min() == 1: labels -= 1
+
+    # The last, load hypergraph.
+    # Yelp restaurant review hypergraph is store in a incidence matrix.
+    H = pd.read_csv(osp.join(path, dataset, 'yelp_restaurant_incidence_H.csv'))
+    node_list = H.node.values - 1
+    edge_list = H.he.values - 1 + num_nodes
+    
+    hyperedges = defaultdict(set)
+    for (v,e) in zip(node_list, edge_list):
+        hyperedges[e].add(v)
+    hyperedges = list(hyperedges.values())
+    
+    edge_sub_list, node_sub_list = build_dual_subgraph(num_nodes,hyperedges,True)
+    
+    return edge_sub_list, node_sub_list, features, labels

@@ -120,7 +120,7 @@ if __name__ == "__main__":
     parser.add_argument("--convs", action="store_true", help="whether use GNN")
     
     
-    parser.add_argument("--device", type=int, default=0)
+    parser.add_argument("--device", type=int, default=3)
     parser.add_argument("--epochs", type=int, default=500)
     parser.add_argument("--patience", type=int, default=100)
     

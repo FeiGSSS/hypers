@@ -28,26 +28,25 @@ def build_dual_subgraph(num_nodes:int, edges_list, add_self_loop:bool=True):
     
     nodes_name = list(range(num_nodes))
     edges_name = [str(e) for e in range(num_edges)]
-    print("{:.1}s".format(time.time()-t0))
+    # print("{:.1}s".format(time.time()-t0))
     B = nx.Graph()
     B.add_nodes_from(edges_name, bipartite=0)
     B.add_nodes_from(nodes_name, bipartite=1)
     for eid, edge in enumerate(edges_list):
         for n in edge:
             B.add_edge(str(eid), n)
-    print("{:.1}s".format(time.time()-t0))
+    # print("{:.1}s".format(time.time()-t0))
             
     
-    # G_nodes = bipartite.weighted_projected_graph(B, nodes_name)
+    G_nodes = bipartite.weighted_projected_graph(B, nodes_name)
     # print("{:.1}s".format(time.time()-t0))
-    # G_edges = bipartite.weighted_projected_graph(B, edges_name)
+    G_edges = bipartite.weighted_projected_graph(B, edges_name)
     # print("{:.1}s".format(time.time()-t0))
     
     edge_subgraph_list = []
     for e_name in tqdm(edges_name):
         nodes_in_e = list(nx.neighbors(B, e_name))
-        # nodes_induced_graph = nx.subgraph(G_nodes, nodes_in_e)
-        nodes_induced_graph = bipartite.weighted_projected_graph(B, nodes_in_e)
+        nodes_induced_graph = nx.subgraph(G_nodes, nodes_in_e)
         
         result_graph = nx.Graph()
         result_graph.add_nodes_from(nodes_induced_graph.nodes())
@@ -65,8 +64,7 @@ def build_dual_subgraph(num_nodes:int, edges_list, add_self_loop:bool=True):
     node_subgraph_list = []
     for n_name in tqdm(nodes_name):
         edges_to_n = list(nx.neighbors(B, n_name))
-        # edges_induced_graph = nx.subgraph(G_edges, edges_to_n)
-        edges_induced_graph = bipartite.weighted_projected_graph(B, edges_to_n)
+        edges_induced_graph = nx.subgraph(G_edges, edges_to_n)
         
         result_graph = nx.Graph()
         result_graph.add_nodes_from(edges_induced_graph.nodes())

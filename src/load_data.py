@@ -5,6 +5,7 @@ import pickle as pkl
 import networkx as nx
 import numpy as np
 import scipy.sparse as sp
+from tqdm import tqdm
 from networkx.algorithms import bipartite
 
 import torch
@@ -16,6 +17,9 @@ def build_dual_subgraph(num_nodes:int, edges_list, add_self_loop:bool=True):
     Args:
         hyperedges (List): _description_
     """
+    import time
+    t0 = time.time()
+    print("building sub graph")
     assert isinstance(num_nodes, int) and num_nodes>0
     if add_self_loop:
         for node in range(num_nodes):
@@ -24,21 +28,26 @@ def build_dual_subgraph(num_nodes:int, edges_list, add_self_loop:bool=True):
     
     nodes_name = list(range(num_nodes))
     edges_name = [str(e) for e in range(num_edges)]
-    
+    print("{:.1}s".format(time.time()-t0))
     B = nx.Graph()
     B.add_nodes_from(edges_name, bipartite=0)
     B.add_nodes_from(nodes_name, bipartite=1)
     for eid, edge in enumerate(edges_list):
         for n in edge:
             B.add_edge(str(eid), n)
+    print("{:.1}s".format(time.time()-t0))
+            
     
-    G_nodes = bipartite.weighted_projected_graph(B, nodes_name)
-    G_edges = bipartite.weighted_projected_graph(B, edges_name)
+    # G_nodes = bipartite.weighted_projected_graph(B, nodes_name)
+    # print("{:.1}s".format(time.time()-t0))
+    # G_edges = bipartite.weighted_projected_graph(B, edges_name)
+    # print("{:.1}s".format(time.time()-t0))
     
     edge_subgraph_list = []
-    for e_name in edges_name:
+    for e_name in tqdm(edges_name):
         nodes_in_e = list(nx.neighbors(B, e_name))
-        nodes_induced_graph = nx.subgraph(G_nodes, nodes_in_e)
+        # nodes_induced_graph = nx.subgraph(G_nodes, nodes_in_e)
+        nodes_induced_graph = bipartite.weighted_projected_graph(B, nodes_in_e)
         
         result_graph = nx.Graph()
         result_graph.add_nodes_from(nodes_induced_graph.nodes())
@@ -54,9 +63,10 @@ def build_dual_subgraph(num_nodes:int, edges_list, add_self_loop:bool=True):
         edge_subgraph_list.append(data)
     
     node_subgraph_list = []
-    for n_name in nodes_name:
+    for n_name in tqdm(nodes_name):
         edges_to_n = list(nx.neighbors(B, n_name))
-        edges_induced_graph = nx.subgraph(G_edges, edges_to_n)
+        # edges_induced_graph = nx.subgraph(G_edges, edges_to_n)
+        edges_induced_graph = bipartite.weighted_projected_graph(B, edges_to_n)
         
         result_graph = nx.Graph()
         result_graph.add_nodes_from(edges_induced_graph.nodes())
@@ -97,7 +107,7 @@ def load_citation_dataset(path:str,
         hypergraph = pkl.load(f)
 
     hyperedges = list(hypergraph.values())
-    edge_sub_list, node_sub_list = build_dual_subgraph(num_nodes,hyperedges,True)
+    edge_sub_list, node_sub_list = build_dual_subgraph(num_nodes,hyperedges)
     
     return edge_sub_list, node_sub_list, features, labels
 
@@ -135,7 +145,7 @@ def load_LE_dataset(path=None,
     for (v,e) in edges.T:
         hyperedges[e].add(v)
     hyperedges = list(hyperedges.values())
-    edge_sub_list, node_sub_list = build_dual_subgraph(num_nodes,hyperedges,True)
+    edge_sub_list, node_sub_list = build_dual_subgraph(num_nodes,hyperedges)
     
     return edge_sub_list, node_sub_list, features, labels
 
@@ -192,6 +202,6 @@ def load_yelp_dataset(path,
         hyperedges[e].add(v)
     hyperedges = list(hyperedges.values())
     
-    edge_sub_list, node_sub_list = build_dual_subgraph(num_nodes,hyperedges,True)
+    edge_sub_list, node_sub_list = build_dual_subgraph(num_nodes,hyperedges)
     
     return edge_sub_list, node_sub_list, features, labels

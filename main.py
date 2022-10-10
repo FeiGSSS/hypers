@@ -137,7 +137,7 @@ if __name__ == "__main__":
 
     
     all_test_score = []
-    runs = 20
+    runs = 10
     for run in range(runs):
         best_test = train(args, dataset, device)
         all_test_score.append(best_test)

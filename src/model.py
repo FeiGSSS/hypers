@@ -59,11 +59,10 @@ class SHGNN(nn.Module):
                 if self.if_convs:
                     copyed_node_x = self.N2E_covs[i](copyed_node_x, eb_edge_index)  # subgraph-GNN
                 # sub_ex = global_mean_pool(copyed_node_x, eb.batch)   # change into SetGNN.PMA
-                ind_batch_eb = eb_edge_index[0].clone()
-                for j in range(len(ind_batch_eb)):
-                    ind_batch_eb[j] = eb.batch[ind_batch_eb[j]]
-                edge_index_N2E = torch.stack([eb_edge_index[0], ind_batch_eb])
-                sub_ex = self.N2E_pooling[i](copyed_node_x, edge_index_N2E)
+                sub_ex = self.N2E_pooling[i](copyed_node_x,
+                                             torch.stack([eb_edge_index[0],
+                                                          eb.batch[eb_edge_index[0]]],
+                                                         dim=0))
                 edge_x.append(sub_ex)
             edge_x = F.dropout(F.relu(torch.cat(edge_x, dim=0)),
                                p=self.dp,
@@ -77,11 +76,10 @@ class SHGNN(nn.Module):
                 if self.if_convs:
                     copyed_edge_x = self.E2N_covs[i](copyed_edge_x, nb_edge_index)
                 # sub_nx = global_mean_pool(copyed_edge_x, nb.batch)
-                ind_batch_nb = nb_edge_index[0].clone()
-                for j in range(len(ind_batch_nb)):
-                    ind_batch_nb[j] = nb.batch[ind_batch_nb[j]]
-                edge_index_E2N = torch.stack([nb_edge_index[0], ind_batch_nb])
-                sub_nx = self.E2N_pooling[i](copyed_edge_x, edge_index_E2N)
+                sub_nx = self.E2N_pooling[i](copyed_edge_x,
+                                             torch.stack([nb_edge_index[0],
+                                                          nb.batch[nb_edge_index[0]]],
+                                                         dim=0))
                 node_x.append(sub_nx)
             node_x = F.dropout(F.relu(torch.cat(node_x, dim=0)),
                                p=self.dp,

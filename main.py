@@ -56,6 +56,7 @@ def train(args, data, device):
     model = SHGNN(heads=args.heads,
                   num_layers=args.num_layers,
                   dim=args.dim,
+                  num_features=data.features.size()[1],
                   num_class=data.num_class,
                   dp=args.dp,
                   convs=args.convs)
@@ -82,7 +83,7 @@ def train(args, data, device):
         opt.zero_grad()
         pred = model(edge_sub_batch,
                             node_sub_batch,
-                            features)
+                            features,)
         loss = model.loss_fun(pred[data.split["train"]], data.labels[data.split["train"]])
         loss.backward()
         opt.step()
@@ -112,12 +113,12 @@ if __name__ == "__main__":
     
     # model parameters
     parser.add_argument("--num_layers", type=int, default=1)
+
     parser.add_argument("--dim", type=int, default=256)
     parser.add_argument("--heads", type=int, default=4)
     parser.add_argument("--dp", type=float, default=0.4, help="dropout")
     parser.add_argument("--convs", action="store_true", help="whether use GNN")
-    
-    
+   
     parser.add_argument("--device", type=int, default=2)
     parser.add_argument("--epochs", type=int, default=500)
     parser.add_argument("--patience", type=int, default=20)

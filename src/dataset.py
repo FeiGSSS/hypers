@@ -15,7 +15,7 @@ from src.load_data import load_citation_dataset, load_LE_dataset, load_yelp_data
 
 
 class MyDataset():
-    def __init__(self, path:str, dataset:str, mini_batch:int=10):
+    def __init__(self, path:str, dataset:str, mini_batch:int=1):  # 10
         if "cocitation" in path:
             data = load_citation_dataset(path, dataset)
         elif "coauthorship" in path:
@@ -32,6 +32,7 @@ class MyDataset():
         
         self.num_class = int(torch.max(self.labels) + 1)
         self.split = self.rand_split_labels(self.labels)
+        self.norm = torch.ones(self.labels.size())
     
     def to(self, device):
         self.edge_sub_batch = [x.to(device) for x in self.edge_sub_batch]

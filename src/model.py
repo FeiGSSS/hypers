@@ -15,7 +15,7 @@ class SHGNN(nn.Module):
         super().__init__()
         self.num_layers = num_layers
         self.dp = dp
-        self.if_convs = convs
+        self.convs = convs
         self.in_emb = nn.Dropout(0.2)
         
         self.N2E_covs = nn.ModuleList()
@@ -28,13 +28,14 @@ class SHGNN(nn.Module):
         for i in range(num_layers):
             self.N2E_covs.append(GCNConv(-1, dim))
             self.E2N_covs.append(GCNConv(-1, dim))
-            self.N2E_pooling.append(PMA(dim, dim, dim, 1, heads=heads))
+            if not self.convs and i==0:
+                self.N2E_pooling.append(PMA(num_features, dim, dim, 1, heads=heads))
+            else:
+                self.N2E_pooling.append(PMA(dim, dim, dim, 1, heads=heads))
             self.E2N_pooling.append(PMA(dim, dim, dim, 1, heads=heads))  # feanture=dim=dim
-            self.EdgeUpdate.append(nn.Sequential(LayerNorm(dim),
-                                                 nn.ReLU(),
+            self.EdgeUpdate.append(nn.Sequential(nn.ReLU(),
                                                  nn.Dropout(dp)))
-            self.NodeUpdate.append(nn.Sequential(LayerNorm(dim),
-                                                 nn.ReLU(),
+            self.NodeUpdate.append(nn.Sequential(nn.ReLU(),
                                                  nn.Dropout(dp)))
             
             
@@ -47,10 +48,13 @@ class SHGNN(nn.Module):
             edge_x = []
             for eb in edge_sub_batch:
                 copyed_node_x = node_x[eb.nodes_map]
-                eb_edge_index = add_self_loops(eb.edge_index, num_nodes=eb.num_nodes)[0]
-                copyed_node_x = self.N2E_covs[i](copyed_node_x, eb_edge_index)  # subgraph-GNN
-                sub_ex = global_mean_pool(copyed_node_x, eb.batch)   # change into SetGNN.PMA
-                # sub_ex = self.N2E_pooling[i](copyed_node_x, torch.stack([eb_edge_index[0], eb.batch[eb_edge_index[0]]],dim=0))
+                # eb_edge_index = add_self_loops(eb.edge_index, num_nodes=eb.num_nodes)[0]
+                eb_edge_index = eb.edge_index
+                if self.convs:
+                    copyed_node_x = self.N2E_covs[i](copyed_node_x, eb_edge_index)  # subgraph-GNN
+                # sub_ex = global_mean_pool(copyed_node_x, eb.batch)   # change into SetGNN.PMA
+                node2edge_map = torch.stack([torch.LongTensor(range(len(eb.batch))).to(eb.batch.device), eb.batch], dim=0)
+                sub_ex = self.N2E_pooling[i](copyed_node_x, node2edge_map)
                 edge_x.append(sub_ex)
             edge_x = torch.cat(edge_x, dim=0)
             edge_x = self.EdgeUpdate[i](edge_x)
@@ -58,10 +62,13 @@ class SHGNN(nn.Module):
             node_x = []
             for nb in node_sub_batch:
                 copyed_edge_x = edge_x[nb.edges_map]
-                nb_edge_index = add_self_loops(nb.edge_index, num_nodes=nb.num_nodes)[0]  # add self_loop
-                copyed_edge_x = self.E2N_covs[i](copyed_edge_x, nb_edge_index)
-                sub_nx = global_mean_pool(copyed_edge_x, nb.batch)
-                # sub_nx = self.E2N_pooling[i](copyed_edge_x, torch.stack([nb_edge_index[0], nb.batch[nb_edge_index[0]]], dim=0))
+                # nb_edge_index = add_self_loops(nb.edge_index, num_nodes=nb.num_nodes)[0]  # add self_loop
+                nb_edge_index = nb.edge_index
+                if self.convs:
+                    copyed_edge_x = self.E2N_covs[i](copyed_edge_x, nb_edge_index)
+                # sub_nx = global_mean_pool(copyed_edge_x, nb.batch)
+                edge2node_map = torch.stack([torch.LongTensor(range(len(nb.batch))).to(nb.batch.device), nb.batch], dim=0)
+                sub_nx = self.E2N_pooling[i](copyed_edge_x, edge2node_map)
                 node_x.append(sub_nx)
             node_x = torch.cat(node_x, dim=0)
             node_x = self.NodeUpdate[i](node_x)

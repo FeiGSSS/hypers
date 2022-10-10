@@ -11,7 +11,6 @@ from src.model import SHGNN
 import torch
 from torch.optim import Adam
 from torch_geometric.utils import add_self_loops
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 torch.manual_seed(2022)
 random.seed(2022)
@@ -54,7 +53,8 @@ def eval_acc(y_true, y_pred):
 
 def train(args, data, device):
     # model
-    model = SHGNN(num_layers=args.num_layers,
+    model = SHGNN(heads=args.heads,
+                  num_layers=args.num_layers,
                   dim=args.dim,
                   num_class=data.num_class,
                   dp=args.dp,
@@ -63,7 +63,6 @@ def train(args, data, device):
     
     # optimizer
     opt = Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
-    scheduler = ReduceLROnPlateau(opt, 'max', factor=0.9, patience=3)
     
     best_val = 0
     best_test = 0
@@ -79,10 +78,9 @@ def train(args, data, device):
     
     process = trange(args.epochs)
     for epoch in process:
-        process.set_description('Runs {:<1}/{} Epoch {:<2}'.format(run+1, runs, epoch))
         model.train()
         opt.zero_grad()
-        pred = pred = model(edge_sub_batch,
+        pred = model(edge_sub_batch,
                             node_sub_batch,
                             features)
         loss = model.loss_fun(pred[data.split["train"]], data.labels[data.split["train"]])
@@ -99,9 +97,8 @@ def train(args, data, device):
             patience_cnt += 1
             if patience_cnt >= args.patience:
                 break
-        
-        scheduler.step(result[1])
-        
+
+        process.set_description('Runs {:<1}/{} Epoch {:<2}'.format(run+1, runs, epoch))
         process.set_postfix(valid_acc=result[1]*100, test_acc=result[2]*100, best_test_acc=best_test*100)
     
     return best_test
@@ -114,18 +111,19 @@ if __name__ == "__main__":
     parser.add_argument("--data_name", type=str, default="cora")
     
     # model parameters
-    parser.add_argument("--num_layers", type=int, default=3)
-    parser.add_argument("--dim", type=int, default=128)
+    parser.add_argument("--num_layers", type=int, default=1)
+    parser.add_argument("--dim", type=int, default=256)
+    parser.add_argument("--heads", type=int, default=4)
     parser.add_argument("--dp", type=float, default=0.4, help="dropout")
     parser.add_argument("--convs", action="store_true", help="whether use GNN")
     
     
-    parser.add_argument("--device", type=int, default=3)
+    parser.add_argument("--device", type=int, default=2)
     parser.add_argument("--epochs", type=int, default=500)
-    parser.add_argument("--patience", type=int, default=100)
+    parser.add_argument("--patience", type=int, default=20)
     
-    parser.add_argument("--lr", type=float, default=1e-2)
-    parser.add_argument("--wd", type=float, default=5e-4)
+    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--wd", type=float, default=0)
     args = parser.parse_args()
     print(args)
     
@@ -138,7 +136,7 @@ if __name__ == "__main__":
 
     
     all_test_score = []
-    runs = 10
+    runs = 20
     for run in range(runs):
         best_test = train(args, dataset, device)
         all_test_score.append(best_test)

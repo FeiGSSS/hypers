@@ -49,7 +49,7 @@ class PMA(MessagePassing):
     _alpha: OptTensor
 
     def __init__(self, in_channels, hid_dim,
-                 out_channels, num_layers, heads=1, concat=True,
+                 out_channels, num_layers=2, heads=1, concat=True,
                  negative_slope=0.2, dropout=0.0, bias=False, **kwargs):
         #         kwargs.setdefault('aggr', 'add')
         super(PMA, self).__init__(node_dim=0, **kwargs)
@@ -150,7 +150,7 @@ class PMA(MessagePassing):
 
 #         Note that in the original code of GMT paper, they do not use additional W^O to combine heads.
 #         This is because O = softmax(QK^T)V and V = V_in*W^V. So W^O can be effectively taken care by W^V!!!
-        out += self.att_r  # This is Seed + Multihead
+        # out += self.att_r  # This is Seed + Multihead
         # concat heads then LayerNorm. Z (rhs of Eq(7)) in GMT paper.
         out = self.ln0(out.view(-1, self.heads * self.hidden))
         # rFF and skip connection. Lhs of eq(7) in GMT paper.

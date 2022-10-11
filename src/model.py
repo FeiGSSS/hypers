@@ -11,12 +11,13 @@ from src.layers import PMA
 
 
 class SHGNN(nn.Module):
-    def __init__(self, heads, num_layers, dim, num_features, num_class, dp, convs: bool = False):
+    def __init__(self, heads, pool, num_layers, dim, num_features, num_class, dp, convs: bool = False):
         super().__init__()
         self.num_layers = num_layers
         self.dp = dp
         self.convs = convs
-        self.in_emb = nn.Dropout(0.2)
+        self.pool = pool
+        self.in_emb = nn.Sequential(nn.Dropout(0.2))
         
         self.N2E_covs = nn.ModuleList()
         self.E2N_covs = nn.ModuleList()
@@ -26,13 +27,13 @@ class SHGNN(nn.Module):
         self.NodeUpdate = nn.ModuleList()
         
         for i in range(num_layers):
-            self.N2E_covs.append(GCNConv(-1, dim))
-            self.E2N_covs.append(GCNConv(-1, dim))
-            if not self.convs and i==0:
-                self.N2E_pooling.append(PMA(num_features, dim, dim, 1, heads=heads))
-            else:
-                self.N2E_pooling.append(PMA(dim, dim, dim, 1, heads=heads))
-            self.E2N_pooling.append(PMA(dim, dim, dim, 1, heads=heads))  # feanture=dim=dim
+            self.N2E_covs.append(GCN(-1, dim, 1, dim, dp, "relu", add_self_loops=True))
+            self.E2N_covs.append(GCN(-1, dim, 1, dim, dp, "relu", add_self_loops=True))
+            
+            pma_in_dim = num_features if i==0 else dim
+            self.N2E_pooling.append(PMA(pma_in_dim, dim, dim, heads=heads))
+            self.E2N_pooling.append(PMA(dim*2, dim, dim, heads=heads))
+            
             self.EdgeUpdate.append(nn.Sequential(nn.ReLU(),
                                                  nn.Dropout(dp)))
             self.NodeUpdate.append(nn.Sequential(nn.ReLU(),
@@ -48,28 +49,30 @@ class SHGNN(nn.Module):
             edge_x = []
             for eb in edge_sub_batch:
                 copyed_node_x = node_x[eb.nodes_map]
-                # eb_edge_index = add_self_loops(eb.edge_index, num_nodes=eb.num_nodes)[0]
-                eb_edge_index = eb.edge_index
-                if self.convs:
-                    copyed_node_x = self.N2E_covs[i](copyed_node_x, eb_edge_index)  # subgraph-GNN
-                # sub_ex = global_mean_pool(copyed_node_x, eb.batch)   # change into SetGNN.PMA
+                sub_ex_convs = global_mean_pool(self.N2E_covs[i](copyed_node_x,  eb.edge_index),
+                                                eb.batch)   # change into SetGNN.PMA
+                
                 node2edge_map = torch.stack([torch.LongTensor(range(len(eb.batch))).to(eb.batch.device), eb.batch], dim=0)
-                sub_ex = self.N2E_pooling[i](copyed_node_x, node2edge_map)
+                sub_ex_pma = self.N2E_pooling[i](copyed_node_x, node2edge_map)
+                
+                sub_ex = torch.cat([sub_ex_convs, sub_ex_pma], dim=1)
                 edge_x.append(sub_ex)
+                
             edge_x = torch.cat(edge_x, dim=0)
             edge_x = self.EdgeUpdate[i](edge_x)
 
             node_x = []
             for nb in node_sub_batch:
                 copyed_edge_x = edge_x[nb.edges_map]
-                # nb_edge_index = add_self_loops(nb.edge_index, num_nodes=nb.num_nodes)[0]  # add self_loop
-                nb_edge_index = nb.edge_index
-                if self.convs:
-                    copyed_edge_x = self.E2N_covs[i](copyed_edge_x, nb_edge_index)
-                # sub_nx = global_mean_pool(copyed_edge_x, nb.batch)
+                sub_nx_convs = global_mean_pool(self.E2N_covs[i](copyed_edge_x, nb.edge_index),
+                                          nb.batch)
+                
                 edge2node_map = torch.stack([torch.LongTensor(range(len(nb.batch))).to(nb.batch.device), nb.batch], dim=0)
-                sub_nx = self.E2N_pooling[i](copyed_edge_x, edge2node_map)
+                sub_nx_pma = self.E2N_pooling[i](copyed_edge_x, edge2node_map)
+                
+                sub_nx = torch.cat([sub_nx_convs, sub_nx_pma], dim=1)
                 node_x.append(sub_nx)
+                
             node_x = torch.cat(node_x, dim=0)
             node_x = self.NodeUpdate[i](node_x)
 

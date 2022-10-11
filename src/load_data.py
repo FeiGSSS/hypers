@@ -52,9 +52,14 @@ def build_dual_subgraph(num_nodes:int, edges_list, add_self_loop:bool=True):
         result_graph.add_nodes_from(nodes_induced_graph.nodes())
         
         for (u,v) in nodes_induced_graph.edges():
-            if nodes_induced_graph.edges[u,v]["weight"] > 1:
-                result_graph.add_edge(u,v)
-        data = tg.utils.from_networkx(result_graph)
+            weight = nodes_induced_graph.edges[u,v]["weight"]
+            if weight>1:
+                result_graph.add_edge(u,v, weight=weight-1)
+        if result_graph.number_of_edges()>0:
+            data = tg.utils.from_networkx(result_graph, group_edge_attrs=["weight"])
+        else:
+            data = tg.utils.from_networkx(result_graph)
+            data.edge_attr = torch.Tensor([])
         data.nodes_map = torch.LongTensor(list(result_graph.nodes()))
         data.edge_name = int(e_name)
         # nodes_idx maps the data back to original graph
@@ -70,9 +75,14 @@ def build_dual_subgraph(num_nodes:int, edges_list, add_self_loop:bool=True):
         result_graph.add_nodes_from(edges_induced_graph.nodes())
         
         for (s,t) in edges_induced_graph.edges():
-            if edges_induced_graph.edges[s,t]["weight"] > 1:
-                result_graph.add_edge(s, t)
-        data = tg.utils.from_networkx(result_graph)
+            weight = edges_induced_graph.edges[s,t]["weight"]
+            if weight > 1:
+                result_graph.add_edge(s, t, weight=weight-1)
+        if result_graph.number_of_edges() > 0:
+            data = tg.utils.from_networkx(result_graph, group_edge_attrs=["weight"])
+        else:
+            data = tg.utils.from_networkx(result_graph)
+            data.edge_attr = torch.Tensor([])
         data.edges_map = torch.LongTensor([int(e) for e in result_graph.nodes()])
         data.node_name = int(n_name)
         node_subgraph_list.append(data)

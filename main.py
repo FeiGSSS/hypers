@@ -12,9 +12,9 @@ import torch
 from torch.optim import Adam
 from torch_geometric.utils import add_self_loops
 
-torch.manual_seed(2022)
-random.seed(2022)
-np.random.seed(2022)
+#torch.manual_seed(2022)
+#random.seed(2022)
+#np.random.seed(2022)
 
 @torch.no_grad()
 def evaluate(model, data):
@@ -54,6 +54,7 @@ def eval_acc(y_true, y_pred):
 def train(args, data, device):
     # model
     model = SHGNN(heads=args.heads,
+                  pool=args.pool,
                   num_layers=args.num_layers,
                   dim=args.dim,
                   num_features=data.features.size()[1],
@@ -118,6 +119,7 @@ if __name__ == "__main__":
     parser.add_argument("--heads", type=int, default=4)
     parser.add_argument("--dp", type=float, default=0.4, help="dropout")
     parser.add_argument("--convs", action="store_true", help="whether use GNN")
+    parser.add_argument("--pool", type=str, default="mean", help="pooling methods")
    
     parser.add_argument("--device", type=int, default=2)
     parser.add_argument("--epochs", type=int, default=500)

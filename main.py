@@ -12,9 +12,9 @@ import torch
 from torch.optim import Adam
 from torch_geometric.utils import add_self_loops
 
-#torch.manual_seed(2022)
-#random.seed(2022)
-#np.random.seed(2022)
+# torch.manual_seed(42)
+# random.seed(42)
+# np.random.seed(42)
 
 @torch.no_grad()
 def evaluate(model, data):
@@ -117,13 +117,13 @@ if __name__ == "__main__":
 
     parser.add_argument("--dim", type=int, default=256)
     parser.add_argument("--heads", type=int, default=4)
-    parser.add_argument("--dp", type=float, default=0.4, help="dropout")
+    parser.add_argument("--dp", type=float, default=0.5, help="dropout")
     parser.add_argument("--convs", action="store_true", help="whether use GNN")
     parser.add_argument("--pool", type=str, default="mean", help="pooling methods")
    
     parser.add_argument("--device", type=int, default=2)
     parser.add_argument("--epochs", type=int, default=500)
-    parser.add_argument("--patience", type=int, default=20)
+    parser.add_argument("--patience", type=int, default=100)
     
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--wd", type=float, default=0)
@@ -141,7 +141,8 @@ if __name__ == "__main__":
     all_test_score = []
     runs = 10
     for run in range(runs):
-        best_test = train(args, dataset, device)
+        data = deepcopy(dataset)
+        best_test = train(args, data, device)
         all_test_score.append(best_test)
     print("Results for {} runs:".format(runs))
     print("mean : {:.2f}% std : {:.2f}".format(np.mean(all_test_score)*100, np.std(all_test_score)*100))

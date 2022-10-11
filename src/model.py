@@ -27,8 +27,10 @@ class SHGNN(nn.Module):
         self.NodeUpdate = nn.ModuleList()
         
         for i in range(num_layers):
-            self.N2E_covs.append(GCN(-1, dim, 1, dim, dp, "relu", add_self_loops=True))
-            self.E2N_covs.append(GCN(-1, dim, 1, dim, dp, "relu", add_self_loops=True))
+            # self.N2E_covs.append(GCN(-1, dim, 1, dim, dp, "relu", add_self_loops=True))
+            # self.E2N_covs.append(GCN(-1, dim, 1, dim, dp, "relu", add_self_loops=True))
+            self.N2E_covs.append(GAT(-1, dim, 1, dim, dp, "relu"))
+            self.E2N_covs.append(GAT(-1, dim, 1, dim, dp, "relu"))
             
             pma_in_dim = num_features if i==0 else dim
             self.N2E_pooling.append(PMA(pma_in_dim, dim, dim, heads=heads))

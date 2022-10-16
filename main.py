@@ -133,7 +133,7 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=int, default=7)
     parser.add_argument("--epochs", type=int, default=500)
     parser.add_argument("--patience", type=int, default=20)
-    parser.add_argument("--convs", action="store_true", help="whether use GNN", default=True)
+    parser.add_argument("--convs", action="store_true", help="whether use GNN")
     parser.add_argument("--pool", type=str, default="mean", help="pooling methods")
 
     args = parser.parse_args()

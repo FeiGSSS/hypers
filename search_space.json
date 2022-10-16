@@ -1,0 +1,8 @@
+{
+    "dp": {"_type": "choice", "_value": [0, 0.3, 0.4, 0.5]},
+    "lr": {"_type": "choice", "_value": [1e-2, 1e-3]},
+    "wd": {"_type": "choice", "_value": [0, 1e-5]},
+    "dim": {"_type": "choice", "_value": [64, 128, 256, 512]},
+    "heads": {"_type": "choice", "_value": [1, 4, 8]},
+    "type_gnn": {"_type": "choice", "_value": ["GAT", "GIN", "GCN"]}
+}

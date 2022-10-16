@@ -74,7 +74,7 @@ class MyDataset():
         
         
     
-    def rand_split_labels(self, label, train_prop=.5, valid_prop=.25, ignore_negative=True, balance=False):
+    def rand_split_labels(self, label, train_prop=.5, valid_prop=.25, ignore_negative=True, balance=True):
         """ Adapted from https://github.com/CUAI/Non-Homophily-Benchmarks"""
         """ randomly splits label into train/valid/test splits """
         if not balance:

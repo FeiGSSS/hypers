@@ -142,8 +142,7 @@ class PMA(MessagePassing):
 
         # propagate_type: (x: OptPairTensor, alpha: OptPairTensor)
 #         ipdb.set_trace()
-        out = self.propagate(edge_index, x=x_V,
-                             alpha=alpha_r, aggr=self.aggr)
+        out = self.propagate(edge_index, x=x_V, alpha=alpha_r, aggr=self.aggr)
 
         alpha = self._alpha
         self._alpha = None

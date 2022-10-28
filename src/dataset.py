@@ -31,7 +31,6 @@ class MyDataset():
         self.edge_sub_batch, self.node_sub_batch = self.mini_batch(data, mini_batch)
         
         self.num_class = int(torch.max(self.labels) + 1)
-        self.split = self.rand_split_labels(self.labels)
         self.norm = torch.ones(self.labels.size())
     
     def to(self, device):
@@ -74,52 +73,52 @@ class MyDataset():
         
         
     
-    def rand_split_labels(self, label, train_prop=.5, valid_prop=.25, ignore_negative=True, balance=False):
-        """ Adapted from https://github.com/CUAI/Non-Homophily-Benchmarks"""
-        """ randomly splits label into train/valid/test splits """
-        if not balance:
-            if ignore_negative:
-                labeled_nodes = torch.where(label != -1)[0]
-            else:
-                labeled_nodes = label
-
-            n = labeled_nodes.shape[0]
-            train_num = int(n * train_prop)
-            valid_num = int(n * valid_prop)
-
-            perm = torch.as_tensor(np.random.permutation(n))
-
-            train_indices = perm[:train_num]
-            val_indices = perm[train_num:train_num + valid_num]
-            test_indices = perm[train_num + valid_num:]
-
-            if not ignore_negative:
-                return train_indices, val_indices, test_indices
-
-            train_idx = labeled_nodes[train_indices]
-            valid_idx = labeled_nodes[val_indices]
-            test_idx = labeled_nodes[test_indices]
-
-            split_idx = {'train': train_idx,
-                        'valid': valid_idx,
-                        'test': test_idx}
+def rand_split_labels(label, train_prop=.5, valid_prop=.25, ignore_negative=True, balance=False):
+    """ Adapted from https://github.com/CUAI/Non-Homophily-Benchmarks"""
+    """ randomly splits label into train/valid/test splits """
+    if not balance:
+        if ignore_negative:
+            labeled_nodes = torch.where(label != -1)[0]
         else:
-            #         ipdb.set_trace()
-            indices = []
-            for i in range(label.max()+1):
-                index = torch.where((label == i))[0].view(-1)
-                index = index[torch.randperm(index.size(0))]
-                indices.append(index)
+            labeled_nodes = label
 
-            percls_trn = int(train_prop/(label.max()+1)*len(label))
-            val_lb = int(valid_prop*len(label))
-            train_idx = torch.cat([i[:percls_trn] for i in indices], dim=0)
-            rest_index = torch.cat([i[percls_trn:] for i in indices], dim=0)
-            rest_index = rest_index[torch.randperm(rest_index.size(0))]
-            valid_idx = rest_index[:val_lb]
-            test_idx = rest_index[val_lb:]
-            split_idx = {'train': train_idx,
-                        'valid': valid_idx,
-                        'test': test_idx}
-        return split_idx
-        
+        n = labeled_nodes.shape[0]
+        train_num = int(n * train_prop)
+        valid_num = int(n * valid_prop)
+
+        perm = torch.as_tensor(np.random.permutation(n))
+
+        train_indices = perm[:train_num]
+        val_indices = perm[train_num:train_num + valid_num]
+        test_indices = perm[train_num + valid_num:]
+
+        if not ignore_negative:
+            return train_indices, val_indices, test_indices
+
+        train_idx = labeled_nodes[train_indices]
+        valid_idx = labeled_nodes[val_indices]
+        test_idx = labeled_nodes[test_indices]
+
+        split_idx = {'train': train_idx,
+                    'valid': valid_idx,
+                    'test': test_idx}
+    else:
+        #         ipdb.set_trace()
+        indices = []
+        for i in range(label.max()+1):
+            index = torch.where((label == i))[0].view(-1)
+            index = index[torch.randperm(index.size(0))]
+            indices.append(index)
+
+        percls_trn = int(train_prop/(label.max()+1)*len(label))
+        val_lb = int(valid_prop*len(label))
+        train_idx = torch.cat([i[:percls_trn] for i in indices], dim=0)
+        rest_index = torch.cat([i[percls_trn:] for i in indices], dim=0)
+        rest_index = rest_index[torch.randperm(rest_index.size(0))]
+        valid_idx = rest_index[:val_lb]
+        test_idx = rest_index[val_lb:]
+        split_idx = {'train': train_idx,
+                    'valid': valid_idx,
+                    'test': test_idx}
+    return split_idx
+    

@@ -1,25 +1,18 @@
 from copy import deepcopy
 import os
-import random
 import argparse
 from tqdm import trange
 import numpy as np
 
-from src.dataset import MyDataset
+from src.dataset import MyDataset, rand_split_labels
 from src.model import SHGNN
 
 import torch
 from torch.optim import Adam
 from torch_geometric.utils import add_self_loops
-import torch.nn.functional as F
 
 import nni
 from nni.utils import merge_parameter
-
-
-# torch.manual_seed(2022)
-# random.seed(2022)
-# np.random.seed(2022)
 
 @torch.no_grad()
 def evaluate(model, data):
@@ -35,12 +28,12 @@ def evaluate(model, data):
                 node_sub_batch,
                 features)
 
-    train_acc = eval_acc(data.labels[data.split['train']],
-                         out[data.split['train']])
-    valid_acc = eval_acc(data.labels[data.split['valid']],
-                         out[data.split['valid']])
-    test_acc = eval_acc(data.labels[data.split['test']],
-                        out[data.split['test']])
+    train_acc = eval_acc(data.labels[split_idx_lst[run]['train']],
+                         out[split_idx_lst[run]['train']])
+    valid_acc = eval_acc(data.labels[split_idx_lst[run]['valid']],
+                         out[split_idx_lst[run]['valid']])
+    test_acc = eval_acc(data.labels[split_idx_lst[run]['test']],
+                        out[split_idx_lst[run]['test']])
     result = [x if isinstance(x, float) else x.cpu().numpy() for x in [train_acc, valid_acc, test_acc, out]]
     return result
 
@@ -93,8 +86,8 @@ def train(args, data, device):
         pred = model(edge_sub_batch,
                      node_sub_batch,
                      features, )
-        loss = model.loss_fun(F.log_softmax(pred[data.split["train"]], dim=1), data.labels[data.split["train"]])
-        # loss = model.loss_fun(pred[data.split["train"]], data.labels[data.split["train"]])
+        loss = model.loss_fun(pred[split_idx_lst[run]["train"]],
+                              data.labels[split_idx_lst[run]["train"]])
         loss.backward()
         opt.step()
 
@@ -121,8 +114,8 @@ if __name__ == "__main__":
     parser.add_argument("--data_name", type=str, default="citeseer")
 
     # model parameters
-    parser.add_argument("--dim", type=int, default=512)
-    parser.add_argument("--heads", type=int, default=8)
+    parser.add_argument("--dim", type=int, default=256)
+    parser.add_argument("--heads", type=int, default=1)
     parser.add_argument("--dp", type=float, default=0.5, help="dropout")
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--wd", type=float, default=0)
@@ -130,7 +123,7 @@ if __name__ == "__main__":
     parser.add_argument("--type_gnn", type=str, default='GCN', choices=['GAT', 'GIN', 'GCN'])
 
     parser.add_argument("--num_layers", type=int, default=1)
-    parser.add_argument("--device", type=int, default=7)
+    parser.add_argument("--device", type=int, default=0)
     parser.add_argument("--epochs", type=int, default=500)
     parser.add_argument("--patience", type=int, default=20)
     parser.add_argument("--convs", action="store_true", help="whether use GNN")
@@ -151,6 +144,11 @@ if __name__ == "__main__":
 
     all_test_score = []
     runs = 10
+    split_idx_lst = []
+    for run in range(runs):
+        split_idx = rand_split_labels(dataset.labels)
+        split_idx_lst.append(split_idx)
+        
     for run in range(runs):
         '''dataset = MyDataset(args.data_path, args.data_name)
         dataset = dataset.to(device)'''

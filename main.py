@@ -3,6 +3,7 @@ import os
 import argparse
 from tqdm import trange
 import numpy as np
+import random
 
 from src.dataset import MyDataset, rand_split_labels
 from src.model import SHGNN
@@ -13,6 +14,13 @@ from torch_geometric.utils import add_self_loops
 
 import nni
 from nni.utils import merge_parameter
+
+seed = 1
+torch.manual_seed(seed)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(seed)
+random.seed(seed)
+np.random.seed(seed)
 
 @torch.no_grad()
 def evaluate(model, data):
@@ -120,13 +128,13 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--wd", type=float, default=0)
 
-    parser.add_argument("--type_gnn", type=str, default='GCN', choices=['GAT', 'GIN', 'GCN'])
+    parser.add_argument("--type_gnn", type=str, default='GAT', choices=['GAT', 'GIN', 'GCN'])
 
     parser.add_argument("--num_layers", type=int, default=1)
-    parser.add_argument("--device", type=int, default=0)
+    parser.add_argument("--device", type=int, default=1)
     parser.add_argument("--epochs", type=int, default=500)
     parser.add_argument("--patience", type=int, default=20)
-    parser.add_argument("--convs", action="store_true", help="whether use GNN")
+    parser.add_argument("--convs", type=str, default="gnn", choices=["gnn", "pma", "both"])
     parser.add_argument("--pool", type=str, default="mean", help="pooling methods")
 
     args = parser.parse_args()

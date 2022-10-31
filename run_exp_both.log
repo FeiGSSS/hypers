@@ -1,0 +1,40 @@
+Namespace(convs='both', data_name='cora', data_path='data/raw_data/cocitation/', device=1, dim=256, dp=0.5, epochs=500, heads=4, lr=0.001, num_layers=1, patience=20, pool='mean', type_gnn='GAT', wd=0)
+Exps. for  data/raw_data/cocitation/cora
+building sub graph
+Results for 10 runs:
+mean : 79.51% std : 0.78
+Namespace(convs='both', data_name='citeseer', data_path='data/raw_data/cocitation/', device=1, dim=512, dp=0.5, epochs=500, heads=8, lr=0.001, num_layers=1, patience=20, pool='mean', type_gnn='GAT', wd=0)
+Exps. for  data/raw_data/cocitation/citeseer
+building sub graph
+Results for 10 runs:
+mean : 73.89% std : 1.37
+Namespace(convs='both', data_name='pubmed', data_path='data/raw_data/cocitation/', device=1, dim=256, dp=0.5, epochs=500, heads=8, lr=0.001, num_layers=1, patience=20, pool='mean', type_gnn='GAT', wd=0)
+Exps. for  data/raw_data/cocitation/pubmed
+building sub graph
+Results for 10 runs:
+mean : 88.16% std : 0.80
+Namespace(convs='both', data_name='cora', data_path='data/raw_data/coauthorship/', device=1, dim=128, dp=0.5, epochs=500, heads=8, lr=0.001, num_layers=1, patience=20, pool='mean', type_gnn='GAT', wd=0)
+Exps. for  data/raw_data/coauthorship/cora
+building sub graph
+Results for 10 runs:
+mean : 83.65% std : 1.14
+Namespace(convs='both', data_name='dblp', data_path='data/raw_data/coauthorship/', device=1, dim=512, dp=0.5, epochs=500, heads=8, lr=0.001, num_layers=1, patience=20, pool='mean', type_gnn='GAT', wd=0)
+Exps. for  data/raw_data/coauthorship/dblp
+building sub graph
+Results for 10 runs:
+mean : 91.56% std : 0.19
+Namespace(convs='both', data_name='zoo', data_path='data/raw_data/', device=1, dim=64, dp=0.5, epochs=500, heads=1, lr=0.01, num_layers=1, patience=20, pool='mean', type_gnn='GAT', wd=1e-05)
+Exps. for  data/raw_data/zoo
+building sub graph
+Results for 10 runs:
+mean : 93.85% std : 6.01
+Namespace(convs='both', data_name='ModelNet40', data_path='data/raw_data/', device=1, dim=512, dp=0.5, epochs=500, heads=8, lr=0.001, num_layers=1, patience=20, pool='mean', type_gnn='GAT', wd=0)
+Exps. for  data/raw_data/ModelNet40
+building sub graph
+Results for 10 runs:
+mean : 98.31% std : 0.19
+Namespace(convs='both', data_name='NTU2012', data_path='data/raw_data/', device=1, dim=256, dp=0.5, epochs=500, heads=1, lr=0.001, num_layers=1, patience=20, pool='mean', type_gnn='GAT', wd=0)
+Exps. for  data/raw_data/NTU2012
+building sub graph
+Results for 10 runs:
+mean : 87.59% std : 1.94

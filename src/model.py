@@ -70,74 +70,77 @@ class SHGNN(nn.Module):
             layer.reset_parameters()
         for layer in self.E2N_pooling:
             layer.reset_parameters()
+    
+    def layer_forward(self, layer_ind, edge_sub_batch, node_sub_batch, node_x):
+        edge_x = []
+        for eb in edge_sub_batch:
+
+            if self.convs == "gnn":  # whether use gnn
+                copyed_node_x = self.N2E_covs[layer_ind](node_x[eb.nodes_map],
+                                                    eb.edge_index)
+                sub_ex_conv = global_mean_pool(copyed_node_x, eb.batch)
+                sub_ex_conv = self.ln_e(sub_ex_conv)
+                edge_x.append(sub_ex_conv)
+                
+            elif self.convs == "pma":
+                node2edge_map = torch.stack([eb.nodes_map, eb.batch], dim=0)
+                sub_ex_pma = self.N2E_pooling[layer_ind](node_x, node2edge_map)
+                edge_x.append(sub_ex_pma)
+                
+            elif self.convs == "both":
+                node2edge_map = torch.stack([eb.nodes_map, eb.batch], dim=0)
+                sub_ex_pma = self.N2E_pooling[layer_ind](node_x, node2edge_map)
+                
+                copyed_node_x = self.N2E_covs[layer_ind](node_x[eb.nodes_map],
+                                                    eb.edge_index)
+                sub_ex_conv = global_mean_pool(copyed_node_x, eb.batch)
+                sub_ex_conv = self.ln_e(sub_ex_conv)
+                
+                edge_x.append(torch.cat([sub_ex_pma, sub_ex_conv], dim=1))
+
+        edge_x = torch.cat(edge_x, dim=0)
+        edge_x = self.EdgeUpdate[layer_ind](edge_x)
+
+        node_x = []
+        for nb in node_sub_batch:
+
+            if self.convs == "gnn":  # whether use gnn
+                copyed_edge_x = self.E2N_covs[layer_ind](edge_x[nb.edges_map],
+                                                    nb.edge_index)
+                sub_nx_conv = global_mean_pool(copyed_edge_x, nb.batch)
+                sub_nx_conv = self.ln_n(sub_nx_conv)
+                node_x.append(sub_nx_conv)
+                
+            elif self.convs == "pma":
+                edge2node_map = torch.stack([nb.edges_map, nb.batch], dim=0)
+                sub_nx_pma = self.E2N_pooling[layer_ind](edge_x, edge2node_map)
+                node_x.append(sub_nx_pma)
+                
+            elif self.convs == "both":
+                copyed_edge_x = self.E2N_covs[layer_ind](edge_x[nb.edges_map],
+                                                    nb.edge_index)
+                sub_nx_conv = global_mean_pool(copyed_edge_x, nb.batch)
+                sub_nx_conv = self.ln_n(sub_nx_conv)
+                
+                edge2node_map = torch.stack([nb.edges_map, nb.batch], dim=0)
+                sub_nx_pma = self.E2N_pooling[layer_ind](edge_x, edge2node_map)
+                
+                node_x.append(torch.cat([sub_nx_pma, sub_nx_conv], dim=1))
+
+        node_x = torch.cat(node_x, dim=0)
+        node_x = self.NodeUpdate[layer_ind](node_x)
+        
+        return node_x
 
     def forward(self, edge_sub_batch, node_sub_batch, node_x):
         node_x = self.in_emb(node_x)
-        node_x_res = []
-        for i in range(self.num_layers):
-            edge_x = []
-            for eb in edge_sub_batch:
-
-                if self.convs == "gnn":  # whether use gnn
-                    copyed_node_x = self.N2E_covs[i](node_x[eb.nodes_map],
-                                                     eb.edge_index)
-                    sub_ex_conv = global_mean_pool(copyed_node_x, eb.batch)
-                    sub_ex_conv = self.ln_e(sub_ex_conv)
-                    edge_x.append(sub_ex_conv)
-                    
-                elif self.convs == "pma":
-                    node2edge_map = torch.stack([eb.nodes_map, eb.batch], dim=0)
-                    sub_ex_pma = self.N2E_pooling[i](node_x, node2edge_map)
-                    edge_x.append(sub_ex_pma)
-                    
-                elif self.convs == "both":
-                    node2edge_map = torch.stack([eb.nodes_map, eb.batch], dim=0)
-                    sub_ex_pma = self.N2E_pooling[i](node_x, node2edge_map)
-                    
-                    copyed_node_x = self.N2E_covs[i](node_x[eb.nodes_map],
-                                                     eb.edge_index)
-                    sub_ex_conv = global_mean_pool(copyed_node_x, eb.batch)
-                    sub_ex_conv = self.ln_e(sub_ex_conv)
-                    
-                    edge_x.append(torch.cat([sub_ex_pma, sub_ex_conv], dim=1))
-
-            edge_x = torch.cat(edge_x, dim=0)
-            edge_x = self.EdgeUpdate[i](edge_x)
-
-            node_x = []
-            for nb in node_sub_batch:
-
-                if self.convs == "gnn":  # whether use gnn
-                    copyed_edge_x = self.E2N_covs[i](edge_x[nb.edges_map],
-                                                     nb.edge_index)
-                    sub_nx_conv = global_mean_pool(copyed_edge_x, nb.batch)
-                    sub_nx_conv = self.ln_n(sub_nx_conv)
-                    node_x.append(sub_nx_conv)
-                    
-                elif self.convs == "pma":
-                    edge2node_map = torch.stack([nb.edges_map, nb.batch], dim=0)
-                    sub_nx_pma = self.E2N_pooling[i](edge_x, edge2node_map)
-                    node_x.append(sub_nx_pma)
-                    
-                elif self.convs == "both":
-                    copyed_edge_x = self.E2N_covs[i](edge_x[nb.edges_map],
-                                                     nb.edge_index)
-                    sub_nx_conv = global_mean_pool(copyed_edge_x, nb.batch)
-                    sub_nx_conv = self.ln_n(sub_nx_conv)
-                    
-                    edge2node_map = torch.stack([nb.edges_map, nb.batch], dim=0)
-                    sub_nx_pma = self.E2N_pooling[i](edge_x, edge2node_map)
-                    
-                    node_x.append(torch.cat([sub_nx_pma, sub_nx_conv], dim=1))
-
-            node_x = torch.cat(node_x, dim=0)
-            node_x = self.NodeUpdate[i](node_x)
-            
-            node_x_res.append(node_x)
-            
-        node_x = torch.cat(node_x_res, dim=1)
-
-        return self.classifier(node_x)
+        node_x = self.layer_forward(0, edge_sub_batch, node_sub_batch, node_x)
+        node_x_res = [node_x]
+        for i in range(1, self.num_layers):
+            node_x = self.layer_forward(i, edge_sub_batch, node_sub_batch, node_x)
+            node_x_res += [node_x]
+        node_x_res = torch.cat(node_x_res, dim=1)
+        return self.classifier(node_x_res)
 
     def loss_fun(self, pred, labels):
         loss = F.nll_loss(pred, labels)

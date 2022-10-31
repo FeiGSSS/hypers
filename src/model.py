@@ -5,8 +5,7 @@ import torch.nn.functional as F
 from torch_geometric.nn import GIN, GAT, GCN, SAGEConv, GATConv, GATv2Conv, GINConv, GCNConv
 from torch_geometric.nn import Linear, BatchNorm
 from torch_geometric.nn import global_mean_pool
-from torch.nn import Parameter
-from src.layers import PMA, MLP2
+from src.layers import PMA
 
 
 class SHGNN(nn.Module):
@@ -36,21 +35,17 @@ class SHGNN(nn.Module):
                 self.N2E_covs.append(GIN(-1, dim, 1, dim, dropout=dp))
                 self.E2N_covs.append(GIN(-1, dim, 1, dim, dropout=dp))
             elif self.type_gnn == 'GAT':
-                # self.N2E_covs.append(GAT(-1, dim, 1, dim, dropout=dp))
-                # self.E2N_covs.append(GAT(-1, dim, 1, dim, dropout=dp))
                 self.N2E_covs.append(GATConv(-1, dim, 1, dropout=dp))
                 self.E2N_covs.append(GATConv(-1, dim, 1, dropout=dp))
             else:
-                # self.N2E_covs.append(GCN(-1, dim, 1, dim, dp, "relu", add_self_loops=True))
-                # self.E2N_covs.append(GCN(-1, dim, 1, dim, dp, "relu", add_self_loops=True))
                 self.N2E_covs.append(GCNConv(-1, dim, add_self_loops=True))
                 self.E2N_covs.append(GCNConv(-1, dim, add_self_loops=True))
                 
 
-            # pma_in_dim = num_features if i == 0 else dim
-            # # dim2 = dim * 2 if self.convs else dim
-            # self.N2E_pooling.append(PMA(pma_in_dim, dim, dim, heads=heads))
-            # self.E2N_pooling.append(PMA(dim, dim, dim, heads=heads))  # * 2
+            dim1 = num_features if i == 0 else dim
+            self.N2E_pooling.append(PMA(dim1, dim, dim, heads=heads))
+            dim2 = dim * 2 if self.convs else dim
+            self.E2N_pooling.append(PMA(dim2, dim, dim, heads=heads))
 
             self.EdgeUpdate.append(nn.Sequential(nn.ReLU(),
                                                  nn.Dropout(dp)))
@@ -68,42 +63,41 @@ class SHGNN(nn.Module):
 
     def forward(self, edge_sub_batch, node_sub_batch, node_x):
         node_x = self.in_emb(node_x)
-        node_x_res = [node_x]
+        node_x_res = []
         for i in range(self.num_layers):
             edge_x = []
             for eb in edge_sub_batch:
-                # node2edge_map = torch.stack([eb.nodes_map, eb.batch], dim=0)
-                # sub_ex_pma = self.N2E_pooling[i](node_x, node2edge_map)
+                node2edge_map = torch.stack([eb.nodes_map, eb.batch], dim=0)
+                sub_ex_pma = self.N2E_pooling[i](node_x, node2edge_map)
 
                 if self.convs:  # whether use gnn
                     copyed_node_x = node_x[eb.nodes_map]
                     copyed_node_x = self.N2E_covs[i](copyed_node_x, eb.edge_index)
-                    sub_ex = global_mean_pool(copyed_node_x, eb.batch)
-                    # sub_ex = (sub_ex + sub_ex_pma)/2
+                    sub_ex_conv = global_mean_pool(copyed_node_x, eb.batch)
+                    sub_ex = torch.cat([sub_ex_pma, sub_ex_conv], dim=1)
                     edge_x.append(sub_ex)
-                # else:
-                #     edge_x.append(sub_ex_pma)
+                else:
+                    edge_x.append(sub_ex_pma)
 
             edge_x = torch.cat(edge_x, dim=0)
-            # edge_x = self.EdgeUpdate[i](edge_x)
+            edge_x = self.EdgeUpdate[i](edge_x)
 
             node_x = []
             for nb in node_sub_batch:
-                # edge2node_map = torch.stack([nb.edges_map, nb.batch], dim=0)
-                # sub_nx_pma = self.E2N_pooling[i](edge_x, edge2node_map)
+                edge2node_map = torch.stack([nb.edges_map, nb.batch], dim=0)
+                sub_nx_pma = self.E2N_pooling[i](edge_x, edge2node_map)
 
                 if self.convs:  # whether use gnn
                     copyed_edge_x = edge_x[nb.edges_map]
                     copyed_edge_x = self.E2N_covs[i](copyed_edge_x, nb.edge_index)
-                    sub_nx = global_mean_pool(copyed_edge_x, nb.batch)
-                    # sub_nx = (sub_nx + sub_nx_pma)/2
+                    sub_nx_conv = global_mean_pool(copyed_edge_x, nb.batch)
+                    sub_nx = torch.cat([sub_nx_pma, sub_nx_conv], dim=1)
                     node_x.append(sub_nx)
-                    
-                # else:
-                #     node_x.append(sub_nx_pma)
+                else:
+                    node_x.append(sub_nx_pma)
 
             node_x = torch.cat(node_x, dim=0)
-            # node_x = self.NodeUpdate[i](node_x)
+            node_x = self.NodeUpdate[i](node_x)
             node_x_res.append(node_x)
         node_x = torch.cat(node_x_res, dim=1)
 

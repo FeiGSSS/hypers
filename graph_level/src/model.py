@@ -8,7 +8,7 @@ from src.layers import PMA
 
 
 class SHGNN(nn.Module):
-    def __init__(self, num_layers, num_features, dim, dp, type_gnn, convs, heads, num_classes):
+    def __init__(self, num_layers, num_features, inner_num_layers, dim, dp, type_gnn, convs, heads, num_classes):
         super().__init__()
         self.num_layers = num_layers
         self.dp = dp
@@ -32,8 +32,8 @@ class SHGNN(nn.Module):
                 self.N2E_covs.append(GATConv(-1, dim//heads, heads, concat=True))
                 self.E2N_covs.append(GATConv(-1, dim//heads, heads, concat=True))
             elif self.type_gnn == 'gin':
-                self.N2E_covs.append(GIN(-1, dim, 2, dim))
-                self.E2N_covs.append(GIN(-1, dim, 2, dim))
+                self.N2E_covs.append(GIN(-1, dim, inner_num_layers, dim))
+                self.E2N_covs.append(GIN(-1, dim, inner_num_layers, dim))
             elif self.type_gnn == "gcn":
                 self.N2E_covs.append(GCNConv(-1, dim, add_self_loops=True))
                 self.E2N_covs.append(GCNConv(-1, dim, add_self_loops=True))

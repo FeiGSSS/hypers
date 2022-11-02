@@ -12,6 +12,7 @@ from collections import namedtuple
 
 from src.dataset import collate
 from src.utils import k_fold
+from src.model import SHGNN
 
 import torch
 import torch.nn.functional as F
@@ -59,24 +60,37 @@ def eval_loss(model, loader, device):
     return loss / len(loader.dataset)
 
 
-def run(args, dataset, model):
+def run(args, dataset):
     
     # device
     device = torch.device("cuda:{}".format(args.cuda)) if args.cuda>=0 else torch.device("cpu")
-    model = model.to(device)
     
     final_train_losses, val_losses, accs, durations = [], [], [], []
     for fold, (train_idx, test_idx, val_idx) in enumerate(zip(*k_fold(dataset, args.folds))):
+        # define datasets
         train_dataset = dataset[train_idx]
         test_dataset = dataset[test_idx]
         val_dataset = dataset[val_idx]
-        
         train_loader = DataLoader(train_dataset, args.batch_size, collate_fn=collate, num_workers=2, shuffle=True)
         val_loader   = DataLoader(val_dataset,   args.batch_size, collate_fn=collate, num_workers=2, shuffle=False)
         test_loader  = DataLoader(test_dataset,  args.batch_size, collate_fn=collate, num_workers=2, shuffle=False)
         
-        model.reset_parameters()
+        # define model
+        model = SHGNN(num_layers=args.num_layers,
+                    num_features=dataset.num_features,
+                    inner_num_layers=args.inner_num_layers,
+                    dim=args.hid_dim,
+                    dp=args.dropout,
+                    type_gnn=args.type_gnn,
+                    convs=args.convs,
+                    heads=args.heads,
+                    num_classes=dataset.num_classes)
+        model = model.to(device)
+        
+        # optimizer
         optimizer = Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
+        
+        # train epoches
         t_start = time.perf_counter()
         pbar = tqdm(range(1, args.epochs + 1), ncols=70)
         cur_val_losses = []

@@ -10,7 +10,6 @@ import argparse
 
 from src.train import run
 from src.dataset import GraphDataset
-from src.model import SHGNN
 
 import torch
 import numpy as np
@@ -25,10 +24,11 @@ if __name__ == "__main__":
     parser.add_argument("-dn", "--data_name", type=str, default="MUTAG", choices=["MUTAG", "DD"])
     
     # model configurations
-    parser.add_argument("--num_layers", type=int, default=2)
+    parser.add_argument("--num_layers", type=int, default=4)
+    parser.add_argument("--inner_num_layers", type=int, default=3)
     parser.add_argument("--hid_dim", type=int, default=32)
     parser.add_argument("--dropout", type=float, default=0.)
-    parser.add_argument("--type_gnn", type=str, default="gat",
+    parser.add_argument("--type_gnn", type=str, default="gin",
                         choices=["gat", "gin", "gcn"])
     parser.add_argument("--heads", type=int, default=4)
     parser.add_argument("--convs", type=str, default="gnn",
@@ -44,8 +44,7 @@ if __name__ == "__main__":
     
     # Others
     parser.add_argument('--seed', type=int, default=1)
-    parser.add_argument("--folds", type=int, default=10,
-                        help="The number of cross validation")
+    parser.add_argument("--folds", type=int, default=10)
     parser.add_argument("--cuda", type=int, default=1)
     
     args = parser.parse_args()
@@ -59,15 +58,5 @@ if __name__ == "__main__":
     # load dataset
     dataset = GraphDataset(data_name = args.data_name)
     
-    # define model
-    model = SHGNN(num_layers=args.num_layers,
-                  num_features=dataset.num_features,
-                  dim=args.hid_dim,
-                  dp=args.dropout,
-                  type_gnn=args.type_gnn,
-                  convs=args.convs,
-                  heads=args.heads,
-                  num_classes=dataset.num_classes)
-    
     # train
-    run(args, dataset, model)
+    run(args, dataset)

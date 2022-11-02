@@ -1,4 +1,3 @@
-import argparse
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -15,7 +14,6 @@ class SHGNN(nn.Module):
         self.dp = dp
         self.convs = convs
         self.pool = pool
-        self.NormLayer = 'ln'
         self.in_emb = nn.Sequential(BatchNorm(num_features),
                                     nn.Dropout(dp))
 

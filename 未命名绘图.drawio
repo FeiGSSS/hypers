@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2022-11-04T02:14:17.821Z" agent="5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15" etag="hy1wlTVIC20Jc4VxXJVS" version="20.4.1" type="github">
+<mxfile host="app.diagrams.net" modified="2022-11-04T02:14:47.130Z" agent="5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15" etag="jTStlZscVlRUdymkVDFD" version="20.4.1" type="github">
   <diagram id="Zizr9kG71ItXu3PUZdYu" name="第 1 页">
     <mxGraphModel dx="983" dy="553" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="1" shadow="0">
       <root>
@@ -666,9 +666,6 @@
         </mxCell>
         <mxCell id="7wE68VjL94obTEk8A7nX-219" value="" style="shape=singleArrow;whiteSpace=wrap;html=1;sketch=0;strokeColor=default;fontSize=10;" vertex="1" parent="1">
           <mxGeometry x="464" y="741.88" width="20" height="20" as="geometry" />
-        </mxCell>
-        <mxCell id="7wE68VjL94obTEk8A7nX-220" value="" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;sketch=0;strokeColor=#3399FF;fontSize=10;fillColor=none;strokeWidth=3;" vertex="1" parent="1">
-          <mxGeometry x="200" y="600" width="650" height="416.88" as="geometry" />
         </mxCell>
         <mxCell id="7wE68VjL94obTEk8A7nX-221" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;X-layer of Subgraph-HyperGNN&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;sketch=0;strokeWidth=3;fontSize=10;" vertex="1" parent="1">
           <mxGeometry x="420" y="570" width="250" height="30" as="geometry" />

@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2022-11-04T02:15:00.899Z" agent="5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15" etag="F0TmXA_lmmVPQDSMZ6vw" version="20.4.1" type="github">
+<mxfile host="app.diagrams.net" modified="2022-11-04T02:15:21.685Z" agent="5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15" etag="ScfDbCOMfP1IQGE1FMg3" version="20.4.1" type="github">
   <diagram id="Zizr9kG71ItXu3PUZdYu" name="第 1 页">
     <mxGraphModel dx="983" dy="553" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="1" shadow="0">
       <root>
@@ -657,6 +657,12 @@
         </mxCell>
         <mxCell id="7wE68VjL94obTEk8A7nX-223" value="Pooling &amp;amp; Classifier" style="rounded=1;whiteSpace=wrap;html=1;sketch=0;strokeColor=#000000;strokeWidth=1;fontSize=13;fillColor=default;" vertex="1" parent="1">
           <mxGeometry x="920" y="726.88" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="7wE68VjL94obTEk8A7nX-224" value="AllSet" style="rounded=1;whiteSpace=wrap;html=1;sketch=0;strokeColor=#000000;strokeWidth=1;fontSize=13;fillColor=default;" vertex="1" parent="1">
+          <mxGeometry x="353" y="930" width="120" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="7wE68VjL94obTEk8A7nX-225" value="AllSet" style="rounded=1;whiteSpace=wrap;html=1;sketch=0;strokeColor=#000000;strokeWidth=1;fontSize=13;fillColor=default;" vertex="1" parent="1">
+          <mxGeometry x="640" y="930" width="120" height="70" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

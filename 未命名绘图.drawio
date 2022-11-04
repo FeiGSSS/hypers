@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2022-11-04T01:54:51.863Z" agent="5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15" etag="cuQNEnJzXnAS72wk6oMr" version="20.4.1" type="github">
+<mxfile host="app.diagrams.net" modified="2022-11-04T01:56:33.367Z" agent="5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15" etag="GMKH8Pw-RJVfHvmPRNzV" version="20.4.1" type="github">
   <diagram id="Zizr9kG71ItXu3PUZdYu" name="第 1 页">
     <mxGraphModel dx="751" dy="422" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="1" shadow="0">
       <root>
@@ -264,6 +264,27 @@
         </mxCell>
         <mxCell id="7wE68VjL94obTEk8A7nX-104" value="`V_4`" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
           <mxGeometry x="610" y="321.77000000000004" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="7wE68VjL94obTEk8A7nX-105" value="" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Hypergraph-wikipedia.svg/2560px-Hypergraph-wikipedia.svg.png;imageBorder=default;sketch=1;" vertex="1" parent="1">
+          <mxGeometry x="420" y="390" width="138.67" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="7wE68VjL94obTEk8A7nX-106" value="" style="curved=1;endArrow=classic;html=1;rounded=0;fontSize=10;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="7wE68VjL94obTEk8A7nX-105">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="360" y="380" as="sourcePoint" />
+            <mxPoint x="330" y="360" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="350" y="450" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7wE68VjL94obTEk8A7nX-107" value="" style="curved=1;endArrow=classic;html=1;rounded=0;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="7wE68VjL94obTEk8A7nX-105" target="7wE68VjL94obTEk8A7nX-104">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="430" y="450" as="sourcePoint" />
+            <mxPoint x="340" y="370" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="620" y="420" />
+            </Array>
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>
